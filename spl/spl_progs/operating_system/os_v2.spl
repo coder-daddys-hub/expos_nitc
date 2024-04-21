@@ -1,0 +1,83 @@
+//STAGE 7 du roadmap
+
+//Cette version du OS Start up est la modification de la version d'origine afin de respecter les regles imposees par l'ABI d'eXpOS
+//on ajoute le chargement de la bibliotheque de haut niveau des systems call et on modifiie la page table pour ajouter les entrees bibliotheque, heap et stack
+
+print "OS starts";
+
+//Load library code from disk (block 13 & 14) to memory (page 63 & 64)
+loadi(63,13);
+loadi(64,14);
+
+print "Library loaded";
+
+//Load INIT program from disk 7-8 to mem 65-66
+loadi(65,7);
+loadi(66,8);
+
+print "INIT prog loaded";
+
+//Load INT10 code from disk 35-36 to mem 22-23
+loadi(22,35);
+loadi(23,36);
+
+print "INT 10 loaded";
+
+//Load ExHandling code from disk 15-16 to mem 2-3
+loadi(2,15);
+loadi(3,16);
+
+//Initialize PTBR to constant PAGE_TABLE_BASE (29696)
+PTBR = PAGE_TABLE_BASE;
+
+print "PTBR init";
+
+//Create 10 pages of memory:2 library,2 heap,4 code,2 stack
+PTLR = 10;
+
+print "PTLR Init";
+
+//Initialize page table for INIT program
+//Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";	//Library page should be read only
+[PTBR+2] = 64;
+[PTBR+3] = "0100";	//Library page should be read only
+
+print "Library init";
+
+//Heap
+[PTBR+4] = 78;
+[PTBR+5] = "0110";	//Heap should be read and write
+[PTBR+6] = 79;
+[PTBR+7] = "0110";      
+
+print "Heap init";
+
+//Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";	//Code should be read only
+[PTBR+10] = 66;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+print "Code init";
+
+//Stack
+[PTBR+16] = 76;
+[PTBR+17] = "0110";
+[PTBR+18] = 77;
+[PTBR+19] = "0110";
+
+print "Stack init";
+
+//IP When INIT program starts
+[76*512] = [65 * 512 + 1];
+SP = 8*512;
+
+print "IP init";
+
+ireturn;
