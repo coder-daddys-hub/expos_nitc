@@ -1,0 +1,87 @@
+//Cette version du OS Start up est la modification de la version d'origine. On y ajoute l'initialisation des valeurs de la Process Table
+
+//Load library code from disk (block 13 & 14) to memory (page 63 & 64)
+loadi(63,13);
+loadi(64,14);
+
+//Load INIT program from disk 7-8 to mem 65-66
+loadi(65,7);
+loadi(66,8);
+
+//Load INT10 code from disk 35-36 to mem 22-23
+loadi(22,35);
+loadi(23,36);
+
+//Load ExHandling code from disk 15-16 to mem 2-3
+loadi(2,15);
+loadi(3,16);
+
+//Load Timer Interrupt handler code from disk 17-18 to mem 4-5
+loadi(4,17);
+loadi(5,18);
+
+// ***** INIT **********
+//Initialize PTBR to constant PAGE_TABLE_BASE (29696)
+PTBR = PAGE_TABLE_BASE;
+
+//Create 10 pages of memory:2 library,2 heap,4 code,2 stack
+PTLR = 10;
+
+//Initialize page table for INIT program
+//Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";	//Library page should be read only
+[PTBR+2] = 64;
+[PTBR+3] = "0100";	//Library page should be read only
+
+//Heap
+[PTBR+4] = 78;
+[PTBR+5] = "0110";	//Heap should be read and write
+[PTBR+6] = 79;
+[PTBR+7] = "0110";      
+
+//Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";	//Code should be read only
+[PTBR+10] = 66;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 76;
+[PTBR+17] = "0110";
+[PTBR+18] = 77;
+[PTBR+19] = "0110";
+
+//IP When INIT program starts
+[76*512] = [65 * 512 + 1];
+SP = 8*512;
+
+//User Area Page Number
+[PROCESS_TABLE + 11] = 80;
+//Process ID
+[PROCESS_TABLE + 1] = 0;
+[SYSTEM_STATUS_TABLE + 1] = 0;
+
+//Save current value of user SP into corresponding Process Table entry
+//Obtain PID of the currently executing process from System Status Table to obtain the Process Table entry of the currently executing process
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+
+//Set the SP to beginning of kernel stack (User Area Page number is the 11th word of the Process Table)
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+//Save the user context to the kernel stack
+backup;
+
+//restore the user context from the kernel stack and set SP to user SP (saved in Process Table) before returning to user mode
+restore;
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13]; 
+
+//load INT7 from disk 29-30 to mem 16-17
+loadi (16,29);
+loadi (17,30);
+
+ireturn;
