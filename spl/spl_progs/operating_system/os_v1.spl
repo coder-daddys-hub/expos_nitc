@@ -1,0 +1,45 @@
+print "os start";
+//Load INIT program from disk 7-8 to mem 65-66
+loadi(65,7);
+loadi(66,8);
+
+print "INIT loaded";
+
+//Load INT10 code from disk 35-36 to mem 22-23
+loadi(22,35);
+loadi(23,36);
+
+print "INT 10 loaded";
+
+//Load ExHandling code from disk 15-16 to mem 2-3
+loadi(2,15);
+loadi(3,16);
+
+print "except loaded";
+
+//Initialize PTBR to constant PAGE_TABLE_BASE (29696)
+PTBR = PAGE_TABLE_BASE;
+
+print "PTBR init";
+
+//Create 3 pages of memmory: 2 code, 1 stack
+PTLR = 3;
+
+print "PTLR init";
+
+//Initialize page table for INIT program
+[PTBR+0] = 65;
+[PTBR+1] = "0100";	//Code page should be read only
+[PTBR+2] = 66;
+[PTBR+3] = "0100";	//Code page should be read only
+[PTBR+4] = 76;
+[PTBR+5] = "0110";	//Stack should be read and write
+
+print "Table init";
+
+[76*512] = 0;		//IP when INIT program starts
+SP = 2*512;
+
+print "IP init";
+
+ireturn;
